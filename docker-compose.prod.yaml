@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - proxy
+      - internal
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.demo-astro-api.rule=Host(`demo-astro-data-explorer.alvaropenaruiz.com`) && PathPrefix(`/api`)
+      - traefik.http.routers.demo-astro-api.entrypoints=websecure
+      - traefik.http.routers.demo-astro-api.tls=true
+      - traefik.http.routers.demo-astro-api.tls.certresolver=le
+      - traefik.http.routers.demo-astro-api.priority=100
+      - traefik.http.middlewares.demo-astro-strip-api.stripPrefix.prefixes=/api
+      - traefik.http.routers.demo-astro-api.middlewares=demo-astro-strip-api
+      - traefik.http.services.demo-astro-api.loadbalancer.server.port=8000
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - proxy
+      - internal
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.demo-astro.rule=Host(`demo-astro-data-explorer.alvaropenaruiz.com`)
+      - traefik.http.routers.demo-astro.entrypoints=websecure
+      - traefik.http.routers.demo-astro.tls=true
+      - traefik.http.routers.demo-astro.tls.certresolver=le
+      - traefik.http.routers.demo-astro.priority=10
+      - traefik.http.services.demo-astro.loadbalancer.server.port=80
+
+networks:
+  proxy:
+    external: true
+    name: proxy
+  internal:
+    internal: true
