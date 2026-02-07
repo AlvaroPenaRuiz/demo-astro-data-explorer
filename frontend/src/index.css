@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+:root {
+    color-scheme: light dark;
+}
+
+html{
+    font-family: system-ui, sans-serif;
+    scroll-behavior: smooth;
+}
+
+body{
+  margin: 0;
+  background-color: rgb(10, 10, 10);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@media (prefers-reduced-motion: reduce){
+    html{
+        scroll-behavior: auto;
+    }
+}
+
+/* Remove the spinners in Chrome, Safari, Edge */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove the spinners in Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
