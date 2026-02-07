@@ -46,6 +46,8 @@ const SearchQueryForm = ({ initialRa, initialDec, initialRadius }: SearchQueryFo
         radius: { isValid: radius !== undefined ? true : null, message: '' }
     }));
 
+    const [isLoading, setIsLoading] = useState(false);
+
     const validateField = (name: string, value: string): { isValid: boolean; message: string } => {
         if (!value.trim()) {
             return { isValid: false, message: '' };
@@ -128,8 +130,16 @@ const SearchQueryForm = ({ initialRa, initialDec, initialRadius }: SearchQueryFo
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const { results, center, count } = await search(parseFloat(formData.ra), parseFloat(formData.dec), parseFloat(formData.radius));
-        navigate('/results', { state: { results, center, count } });
+        setIsLoading(true);
+        try {
+            const startTime = performance.now();
+            const { results, center, count } = await search(parseFloat(formData.ra), parseFloat(formData.dec), parseFloat(formData.radius));
+            const endTime = performance.now();
+            const queryTime = Math.round(endTime - startTime);
+            navigate('/results', { state: { results, center, count, queryTime } });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const isFormValid = 
@@ -212,11 +222,18 @@ const SearchQueryForm = ({ initialRa, initialDec, initialRadius }: SearchQueryFo
                     <button className="shadow shadow-white/20 bg-gray-900/70 py-2 rounded-sm hover:scale-104" type="button" onClick={handleSparseRegion}>Example Sparse Region</button>
                 </div>
                     <button 
-                        className="shadow shadow-white/20 bg-purple-800/30 py-3 rounded-sm hover:scale-104 w-60 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity" 
+                        className="shadow shadow-white/20 bg-purple-800/30 py-3 rounded-sm hover:scale-104 w-60 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center justify-center gap-2" 
                         type="submit" 
-                        disabled={!isFormValid}
+                        disabled={!isFormValid || isLoading}
                     >
-                        Search
+                        {isLoading ? (
+                            <>
+                                <span className="inline-block w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></span>
+                                Searching...
+                            </>
+                        ) : (
+                            'Search'
+                        )}
                     </button>
             </form>
 
