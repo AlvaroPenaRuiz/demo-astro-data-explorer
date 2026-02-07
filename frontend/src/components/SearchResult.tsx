@@ -32,7 +32,7 @@ const SearchResult = () => {
     const [filterMagMax, setFilterMagMax] = useState<string>('');
     const [showScatterPlot, setShowScatterPlot] = useState(false);
 
-    const { count = 0, results = [] } = state || {};
+    const { results = [] } = state || {};
 
     const filteredAndSorted = useMemo(() => {
         let filtered = [...results];
@@ -63,12 +63,12 @@ const SearchResult = () => {
 
         if (filterMagMin) {
             const min = parseFloat(filterMagMin);
-            filtered = filtered.filter(obj => obj.mag_v !== undefined && obj.mag_v !== null && obj.mag_v !== '' && parseFloat(obj.mag_v) >= min);
+            filtered = filtered.filter(obj => obj.mag_v !== undefined && obj.mag_v !== null && parseFloat(String(obj.mag_v)) >= min);
         }
 
         if (filterMagMax) {
             const max = parseFloat(filterMagMax);
-            filtered = filtered.filter(obj => obj.mag_v !== undefined && obj.mag_v !== null && obj.mag_v !== '' && parseFloat(obj.mag_v) <= max);
+            filtered = filtered.filter(obj => obj.mag_v !== undefined && obj.mag_v !== null && parseFloat(String(obj.mag_v)) <= max);
         }
 
         if (sortBy) {
@@ -323,7 +323,7 @@ const SearchResult = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                paginatedResults.map((obj, i) => (
+                                paginatedResults.map((obj) => (
                                     <tr 
                                         key={obj.name} 
                                         data-object-name={obj.name}

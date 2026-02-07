@@ -41,8 +41,8 @@ const ScatterPlot = ({ center, results, onPointClick }: ScatterPlotProps) => {
         const plotPoints: PlotPoint[] = results
             .filter(obj => obj.ra_deg !== null && obj.dec_deg !== null)
             .map(obj => {
-                const dx = (obj.ra_deg - center.ra) * Math.cos((center.dec * Math.PI) / 180);
-                const dy = obj.dec_deg - center.dec;
+                const dx = (obj.ra_deg! - center.ra) * Math.cos((center.dec * Math.PI) / 180);
+                const dy = obj.dec_deg! - center.dec;
                 
                 const pixelsPerDegree = PLOT_SIZE / (2 * center.radius);
                 const svgX = CENTER_X + dx * pixelsPerDegree;
@@ -133,7 +133,7 @@ const ScatterPlot = ({ center, results, onPointClick }: ScatterPlotProps) => {
                                 <g key={`x-${tick}`}>
                                     <line x1={x} y1={CENTER_Y - 5} x2={x} y2={CENTER_Y + 5} stroke="rgb(147, 51, 234)" strokeWidth="1.5" />
                                     <text x={x} y={CENTER_Y + 18} fill="rgb(147, 51, 234)" fontSize="12" fontWeight="600" textAnchor="middle">
-                                        {`${tick > 0 ? '+' : ''}${tick * center.radius.toFixed(1)}°`}
+                                        {`${tick > 0 ? '+' : ''}${(tick * center.radius).toFixed(1)}°`}
                                     </text>
                                 </g>
                             );
@@ -147,7 +147,7 @@ const ScatterPlot = ({ center, results, onPointClick }: ScatterPlotProps) => {
                                 <g key={`y-${tick}`}>
                                     <line x1={CENTER_X - 5} y1={y} x2={CENTER_X + 5} y2={y} stroke="rgb(147, 51, 234)" strokeWidth="1.5" />
                                     <text x={CENTER_X - 15} y={y + 4} fill="rgb(147, 51, 234)" fontSize="12" fontWeight="600" textAnchor="end">
-                                        {`${tick > 0 ? '+' : ''}${tick * center.radius.toFixed(1)}°`}
+                                        {`${tick > 0 ? '+' : ''}${(tick * center.radius).toFixed(1)}°`}
                                     </text>
                                 </g>
                             );
