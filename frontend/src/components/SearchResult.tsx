@@ -1,6 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import type { SearchCenter, AstronomicalObject } from '../types/search';
+import ScatterPlot from './ScatterPlot';
+import Stats from './Stats';
+import { mapTypeLabel } from '../utils/typeMapper';
 
 interface LocationState {
     center: SearchCenter;
@@ -10,18 +13,6 @@ interface LocationState {
 }
 
 const ITEMS_PER_PAGE = 10;
-
-const mapTypeLabel = (type: string | null | undefined): string => {
-    if (!type) return 'Other';
-    
-    if (type === 'PN' || type === 'PN?') return 'Planetary nebula';
-    if (type.startsWith('No')) return 'Nova';
-    if (type === 'AGN') return 'Active galaxy nucleus';
-    if (type === 'Gl?') return 'Globular cluster (candidate)';
-    if (type === '*') return 'Star';
-    
-    return 'Other';
-};
 
 const SearchResult = () => {
     const location = useLocation();
@@ -37,6 +28,9 @@ const SearchResult = () => {
     const [filterRaMax, setFilterRaMax] = useState<string>('');
     const [filterDecMin, setFilterDecMin] = useState<string>('');
     const [filterDecMax, setFilterDecMax] = useState<string>('');
+    const [filterMagMin, setFilterMagMin] = useState<string>('');
+    const [filterMagMax, setFilterMagMax] = useState<string>('');
+    const [showScatterPlot, setShowScatterPlot] = useState(false);
 
     const { count = 0, results = [] } = state || {};
 
@@ -67,6 +61,16 @@ const SearchResult = () => {
             filtered = filtered.filter(obj => (obj.dec_deg || 0) <= max);
         }
 
+        if (filterMagMin) {
+            const min = parseFloat(filterMagMin);
+            filtered = filtered.filter(obj => obj.mag_v !== undefined && obj.mag_v !== null && obj.mag_v !== '' && parseFloat(obj.mag_v) >= min);
+        }
+
+        if (filterMagMax) {
+            const max = parseFloat(filterMagMax);
+            filtered = filtered.filter(obj => obj.mag_v !== undefined && obj.mag_v !== null && obj.mag_v !== '' && parseFloat(obj.mag_v) <= max);
+        }
+
         if (sortBy) {
             filtered.sort((a, b) => {
                 let aVal: any = a[sortBy as keyof AstronomicalObject];
@@ -79,9 +83,8 @@ const SearchResult = () => {
                 return sortOrder === 'asc' ? comparison : -comparison;
             });
         }
-
         return filtered;
-    }, [results, filterType, filterRaMin, filterRaMax, filterDecMin, filterDecMax, sortBy, sortOrder]);
+    }, [results, filterType, filterRaMin, filterRaMax, filterDecMin, filterDecMax, filterMagMin, filterMagMax, sortBy, sortOrder]);
 
     const totalPages = Math.ceil(filteredAndSorted.length / ITEMS_PER_PAGE);
     const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -149,8 +152,7 @@ const SearchResult = () => {
 
             <div className="bg-black/30 p-8 rounded-lg shadow-lg shadow-purple-800/20">
                 <p className="text-gray-400 text-sm mb-6">Found {filteredAndSorted.length} objects</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6 text-sm">
+                <div className="grid grid-cols-7 gap-3 mb-6 text-sm">
                     <div>
                         <label className="text-gray-400 block mb-1">Filter by Type</label>
                         <select 
@@ -221,6 +223,34 @@ const SearchResult = () => {
                             className="w-full bg-gray-800/50 border border-purple-800/30 rounded px-2 py-1 text-white text-xs"
                         />
                     </div>
+                    <div>
+                        <label className="text-gray-400 block mb-1">Mag Min</label>
+                        <input 
+                            type="text"
+                            inputMode="decimal"
+                            value={filterMagMin}
+                            onChange={(e) => {
+                                setFilterMagMin(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            placeholder="0"
+                            className="w-full bg-gray-800/50 border border-purple-800/30 rounded px-2 py-1 text-white text-xs"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-gray-400 block mb-1">Mag Max</label>
+                        <input 
+                            type="text"
+                            inputMode="decimal"
+                            value={filterMagMax}
+                            onChange={(e) => {
+                                setFilterMagMax(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            placeholder="50"
+                            className="w-full bg-gray-800/50 border border-purple-800/30 rounded px-2 py-1 text-white text-xs"
+                        />
+                    </div>
                 </div>
 
                 <div className="flex gap-2 mb-6">
@@ -229,6 +259,8 @@ const SearchResult = () => {
                             setFilterType('');
                             setFilterRaMin('');
                             setFilterRaMax('');
+                            setFilterMagMin('');
+                            setFilterMagMax('');
                             setFilterDecMin('');
                             setFilterDecMax('');
                             setSortBy('');
@@ -238,6 +270,12 @@ const SearchResult = () => {
                         className="text-sm px-4 py-1 bg-purple-800/30 border border-purple-800/30 rounded hover:border-purple-800/60 transition-colors"
                     >
                         Clear Filters
+                    </button>
+                    <button
+                        onClick={() => setShowScatterPlot(!showScatterPlot)}
+                        className="text-sm px-4 py-1 bg-purple-800/30 border border-purple-800/30 rounded hover:border-purple-800/60 transition-colors"
+                    >
+                        {showScatterPlot ? 'Hide Plot' : 'Show Plot'}
                     </button>
                 </div>
                 
@@ -286,7 +324,11 @@ const SearchResult = () => {
                                 </tr>
                             ) : (
                                 paginatedResults.map((obj, i) => (
-                                    <tr key={i} className="border-b border-purple-800/20 hover:bg-purple-800/10 transition-colors">
+                                    <tr 
+                                        key={obj.name} 
+                                        data-object-name={obj.name}
+                                        className="border-b border-purple-800/20 hover:bg-purple-800/10 transition-colors"
+                                    >
                                         <td className="py-3 px-4 text-white">{obj.name}</td>
                                         <td className="py-3 px-4 text-gray-400">{mapTypeLabel(obj.type)}</td>
                                         <td className="py-3 px-4 text-gray-400">{obj.ra_deg?.toFixed(4) || '-'}</td>
@@ -319,6 +361,29 @@ const SearchResult = () => {
                             Next →
                         </button>
                     </div>
+                )}
+
+                {showScatterPlot && (
+                    <>
+                        <ScatterPlot 
+                            center={center} 
+                            results={filteredAndSorted} 
+                            onPointClick={(obj) => {
+                                // Find row more efficiently by scrolling to first occurrence
+                                const rows = document.querySelectorAll('[data-object-name]');
+                                const targetRow = Array.from(rows).find(row => 
+                                    row.getAttribute('data-object-name') === obj.name
+                                ) as HTMLElement | undefined;
+                                
+                                if (targetRow) {
+                                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                    targetRow.classList.add('bg-purple-800/30');
+                                    setTimeout(() => targetRow.classList.remove('bg-purple-800/30'), 2000);
+                                }
+                            }}
+                        />
+                        <Stats center={center} results={filteredAndSorted} />
+                    </>
                 )}
             </div>
         </div>
